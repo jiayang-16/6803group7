@@ -1,5 +1,5 @@
 import pygame as pg
-import config
+import utils
 
 
 class BulletType:
@@ -20,7 +20,7 @@ class Bullet(pg.sprite.Sprite):
             self.image = pg.Surface((type.width, type.height))
             self.image.fill((0, 0, 255))
         else:
-            self.image = config.load_asset(type.image)
+            self.image = utils.load_asset(type.image)
             self.image = pg.transform.scale(self.image, (type.width, type.height))
         self.rect = self.image.get_rect()
         self.rect.bottom = y
@@ -52,12 +52,12 @@ class Buff(pg.sprite.Sprite):
             self.image = pg.Surface((type.width, type.height))
             self.image.fill((0, 255, 255))
         else:
-            self.image = config.load_asset(type.image)
+            self.image = utils.load_asset(type.image)
             self.image = pg.transform.scale(self.image, (type.width, type.height))
         self.rect = self.image.get_rect()
         self.rect.bottom = y
         self.rect.centerx = x
-        self.speed = config.FALL_SPEED
+        self.speed = utils.FALL_SPEED
         self.type = type
         font = pg.font.Font(None, 30)
         text = ""
@@ -65,23 +65,23 @@ class Buff(pg.sprite.Sprite):
             text += f"c{type.bullet_cnt}"
         if type.bullet_speed is not None:
             text += f"s{type.bullet_speed}"
-        print(text)
         text = font.render(text, True, (0, 0, 0))
         self.image.blit(text, (0, 0))
 
     def update(self):
         self.rect.y += self.speed
-        if self.rect.top > config.HEIGHT:
+        if self.rect.top > utils.HEIGHT:
             self.kill()
 
 
 class EnemyType:
-    def __init__(self, name="default", health=10, image="enm01.png", width=100, height=100):
+    def __init__(self, name="default", health=10, image="enm01.png", width=100, height=100, boss=False):
         self.name = name
         self.health = health
         self.image = image
         self.width = width
         self.height = height
+        self.boss = boss
 
 
 class Enemy(pg.sprite.Sprite):
@@ -91,21 +91,24 @@ class Enemy(pg.sprite.Sprite):
             self.image = pg.Surface((type.width, type.height))
             self.image.fill((255, 0, 0))
         else:
-            self.imagesrc = config.load_asset(type.image)
+            self.imagesrc = utils.load_asset(type.image)
             self.image = pg.transform.scale(self.imagesrc, (type.width, type.height))
         self.rect = self.image.get_rect()
         self.rect.bottom = y
         self.rect.centerx = x
-        self.speed = config.FALL_SPEED
+        self.speed = utils.FALL_SPEED
         self.health = type.health
+        self.type = type
         self.font = pg.font.Font(None, 40)
 
     def update(self):
-        self.image = pg.transform.scale(self.imagesrc, (self.rect.width, self.rect.height))  # todo: change to image
-        text = self.font.render(str(self.health), True, (255, 0, 0))
+        # refresh image to show health
+        self.image = pg.transform.scale(self.imagesrc, (self.rect.width, self.rect.height))
+        text = self.font.render(utils.format_number(self.health), True, (255, 0, 0))
         self.image.blit(text, (0, 0))
-        self.rect.y += self.speed
-        if self.rect.bottom > config.HEIGHT:
+        if not self.type.boss or (self.type.boss and self.rect.bottom < utils.HEIGHT // 3):
+            self.rect.y += self.speed
+        if self.rect.bottom > utils.HEIGHT:
             self.kill()
 
 
@@ -116,23 +119,23 @@ class Player(pg.sprite.Sprite):
             self.image = pg.Surface((50, 50))
             self.image.fill((0, 255, 0))
         else:
-            self.image = config.load_asset(image)
+            self.image = utils.load_asset(image)
             self.image = pg.transform.scale(self.image, (50, 50))
         self.rect = self.image.get_rect()
-        self.rect.centerx = config.WIDTH / 2
-        self.rect.bottom = config.HEIGHT - 10
+        self.rect.centerx = utils.WIDTH / 2
+        self.rect.bottom = utils.HEIGHT - 10
         self.move_speed = move_speed
         self.bullet_cnt = 1
         self.bullet_type = BulletType()
         self.bullet_gap = 10
         self.bullet_speed = bullet_speed
-        pg.time.set_timer(config.FIRE_EVENT, 1000 // bullet_speed)
+        pg.time.set_timer(utils.FIRE_EVENT, 1000 // bullet_speed)
 
     def add_speed(self, speed):
         if speed == 0:
             return
         self.bullet_speed += speed
-        pg.time.set_timer(config.FIRE_EVENT, 1000 // self.bullet_speed)
+        pg.time.set_timer(utils.FIRE_EVENT, 1000 // self.bullet_speed)
 
     def update(self):
         keystate = pg.key.get_pressed()
@@ -141,8 +144,8 @@ class Player(pg.sprite.Sprite):
             self.rect.x -= self.move_speed
         elif keystate[pg.K_RIGHT]:
             self.rect.x += self.move_speed
-        if self.rect.right > config.WIDTH:
-            self.rect.right = config.WIDTH
+        if self.rect.right > utils.WIDTH:
+            self.rect.right = utils.WIDTH
         if self.rect.left < 0:
             self.rect.left = 0
 
@@ -173,7 +176,7 @@ class Button(pg.sprite.Sprite):
             self.image = pg.Surface((width, height))
             self.image.fill((0, 0, 0))
         else:
-            self.image = config.load_asset(image)
+            self.image = utils.load_asset(image)
             self.image = pg.transform.scale(self.image, (width, height))
         self.rect = self.image.get_rect()
         self.rect.centerx = x
