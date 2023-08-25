@@ -11,6 +11,14 @@ PAUSE_EVENT = pg.USEREVENT + 3
 RESUME_EVENT = pg.USEREVENT + 4
 # restart event, trigger when game restart
 RESTART_EVENT = pg.USEREVENT + 5
+# boss event, trigger when boss appear
+BOSS_EVENT = pg.USEREVENT + 6
+
+# game state
+IDLE = 0
+PAUSE = 1
+RUNNING = 2
+QUIT = 3
 
 # fall speed of enemies and buffs
 FALL_SPEED = 3
@@ -30,3 +38,14 @@ def load_asset(name):
     else:
         assets[name] = pg.image.load(os.path.join(res_dir, name))
         return assets[name]
+
+
+def format_number(n):
+    suffixes = ['k', 'm', 'b', 't']  # 后缀，可根据需要扩展
+    if n < 1000:
+        return str(n)
+    for i, suffix in enumerate(suffixes):
+        magnitude = 1000 ** (i + 1)
+        if n < magnitude * 1000:
+            return '{:.1f}{}'.format(n / magnitude, suffix)
+    return str(n)
