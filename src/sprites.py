@@ -43,13 +43,13 @@ class Bullet(pg.sprite.Sprite):
 
 class BuffType:
     def __init__(self, name="default", image="buff01.png", width=50, height=50, bullet_cnt=None,
-                 bullet_speed=None, bullet_size=None, bullet_range=None):
+                 shoot_speed=None, bullet_size=None, bullet_range=None):
         self.name = name
         self.image = image
         self.width = width
         self.height = height
         self.bullet_cnt = bullet_cnt
-        self.bullet_speed = bullet_speed
+        self.bullet_speed = shoot_speed
         self.bullet_size = bullet_size
         self.bullet_range = bullet_range
 
