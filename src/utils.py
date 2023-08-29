@@ -26,6 +26,13 @@ FALL_SPEED = 3
 SPAWN_TIME = 2000
 # screen size
 WIDTH, HEIGHT = 480, 720
+# boss respawn time
+BOSS_TIME = 50000
+
+# bullet type
+BLT_AMMO = 0
+BLT_BLADE = 1
+
 main_dir = os.path.abspath(__file__)
 res_dir = os.path.join(os.path.dirname(os.path.dirname(main_dir)), "res")
 assets = {}
@@ -42,6 +49,7 @@ def load_asset(name):
 
 def format_number(n):
     suffixes = ['k', 'm', 'b', 't']  # 后缀，可根据需要扩展
+    n = int(n)
     if n < 1000:
         return str(n)
     for i, suffix in enumerate(suffixes):

@@ -4,6 +4,17 @@ import pygame as pg
 import utils
 import sprites
 
+
+def generate_buff(bullet_kind):
+    b_type = None
+    r = random.randint(0, 1)
+    if bullet_kind == utils.BLT_AMMO:
+        b_type = sprites.BuffType(bullet_cnt=random.randrange(0, 2), bullet_speed=random.randrange(0, 2))
+    elif bullet_kind == utils.BLT_BLADE:
+        b_type = sprites.BuffType(bullet_size=random.uniform(1, 1.1), bullet_range=random.randrange(10, 20))
+    return b_type
+
+
 background = utils.load_asset("background.png")
 background = pg.transform.scale(background, (utils.WIDTH, utils.HEIGHT))
 
@@ -11,7 +22,7 @@ FPS = 60
 pg.init()
 
 screen = pg.display.set_mode((utils.WIDTH, utils.HEIGHT), pg.SCALED)
-pg.display.set_caption("NotAdvertisement")
+pg.display.set_caption("MH Rogue: Sky Battlefield")
 pg.mouse.set_visible(True)
 
 screen.blit(background, (0, 0))
@@ -19,7 +30,10 @@ pg.display.flip()
 clock = pg.time.Clock()
 
 # -----------------all things have to be reset when restart game-----------------
-player = sprites.Player()
+player = sprites.Player(image="ply02.png",
+                        shoot_speed=1,
+                        bullet_type=sprites.BulletType(damage=1, speed=-2, kind=utils.BLT_BLADE, width=50, height=10,
+                                                       image="blt_b_01.png", range=100))
 all_sprites = pg.sprite.Group()
 all_bullets = pg.sprite.Group()
 all_enemies = pg.sprite.Group()
@@ -69,7 +83,7 @@ while game_state != utils.QUIT:
     if game_state == utils.PAUSE:
         pass
     else:
-        if ticker // 1000 >= 5 and not boss:
+        if ticker >= utils.BOSS_TIME and not boss:
             boss = sprites.Enemy(utils.WIDTH // 2, 0,
                                  sprites.EnemyType(image="boss01.png", health=20000, width=200, height=200, boss=True))
             all_enemies.add(boss)
@@ -91,14 +105,20 @@ while game_state != utils.QUIT:
             all_sprites.add(button)
             continue
         # calculate bullets&enemies hits
-        bullets_hits = pg.sprite.groupcollide(all_enemies, all_bullets, False, True)
+        bullets_hits = pg.sprite.groupcollide(all_enemies, all_bullets, False, False)
         for hit in bullets_hits:
             for bullet in bullets_hits[hit]:
+                if bullet.type.kind == utils.BLT_AMMO:
+                    bullet.kill()
                 hit.health -= bullet.type.damage
+                hit.hp_change = True
                 if hit.health <= 0:
                     hit.kill()
-                    buff_type = sprites.BuffType(bullet_cnt=random.randrange(0, 2),
-                                                 bullet_speed=random.randrange(0, 2))
+                    animation = sprites.Animation(hit.rect.centerx, hit.rect.centery,
+                                                  ["explosion/1.png", "explosion/2.png", "explosion/3.png"],
+                                                  width=hit.rect.width, height=hit.rect.height)
+                    all_sprites.add(animation)
+                    buff_type = generate_buff(bullet.type.kind)
                     buff = sprites.Buff(hit.rect.centerx, hit.rect.centery, type=buff_type)
                     all_buffs.add(buff)
                     all_sprites.add(buff)
