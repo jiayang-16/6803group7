@@ -9,7 +9,7 @@ def generate_buff(bullet_kind):
     b_type = None
     r = random.randint(0, 1)
     if bullet_kind == utils.BLT_AMMO:
-        b_type = sprites.BuffType(bullet_cnt=random.randrange(0, 2), bullet_speed=random.randrange(0, 2))
+        b_type = sprites.BuffType(bullet_cnt=random.randrange(0, 2), shoot_speed=random.randrange(0, 2))
     elif bullet_kind == utils.BLT_BLADE:
         b_type = sprites.BuffType(bullet_size=random.uniform(1, 1.1), bullet_range=random.randrange(10, 20))
     return b_type
@@ -106,7 +106,7 @@ while game_state != utils.QUIT:
             continue
         # calculate bullets&enemies hits
         bullets_hits = pg.sprite.groupcollide(all_enemies, all_bullets, False, False)
-        for hit in bullets_hits:
+        for hit in bullets_hits: #{"enemy1":["bullet1","bullet2"]}
             for bullet in bullets_hits[hit]:
                 if bullet.type.kind == utils.BLT_AMMO:
                     bullet.kill()
