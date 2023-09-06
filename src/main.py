@@ -4,6 +4,27 @@ import pygame as pg
 import utils
 import sprites
 
+class PauseMenu:
+    def __init__(self):
+        self.resume_button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 50, 100, 50, text="Resume", event=utils.RESUME_EVENT)
+        self.all_sprites = pg.sprite.Group()
+        self.all_sprites.add(self.resume_button)
+
+    def handle_events(self, events):
+        for event in events:
+            if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+                if self.resume_button.rect.collidepoint(event.pos):
+                    return utils.RESUME_EVENT
+        return None
+
+    def draw(self, screen):
+        dim_surface = pg.Surface((utils.WIDTH, utils.HEIGHT), pg.SRCALPHA)
+        dim_surface.fill((0, 0, 0, 128))
+        screen.blit(dim_surface, (0, 0))
+        self.all_sprites.draw(screen)
+
+pause_menu = None
+
 
 def generate_buff(bullet_kind):
     b_type = None
@@ -47,6 +68,7 @@ boss = None
 ticker = 0
 
 pg.time.set_timer(utils.SPAWN_EVENT, utils.SPAWN_TIME)
+
 while game_state != utils.QUIT:
     duration = clock.tick(FPS)
     for event in pg.event.get():
@@ -80,8 +102,16 @@ while game_state != utils.QUIT:
             game_state = utils.RUNNING
             # todo reset all state
             pass
+        elif event.type == pg.KEYDOWN:
+            if event.key == pg.K_ESCAPE and game_state == utils.RUNNING:
+                game_state = utils.PAUSE
+                pause_menu = PauseMenu()  # Create the pause menu
     if game_state == utils.PAUSE:
-        pass
+        if pause_menu:
+            # Handle pause events and potentially change the game state.
+            new_game_state = pause_menu.handle_events(pg.event.get())
+            if new_game_state == utils.RESUME_EVENT:
+                game_state = utils.RUNNING
     else:
         if ticker >= utils.BOSS_TIME and not boss:
             boss = sprites.Enemy(utils.WIDTH // 2, 0,
