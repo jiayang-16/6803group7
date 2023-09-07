@@ -14,11 +14,14 @@ RESTART_EVENT = pg.USEREVENT + 5
 # boss event, trigger when boss appear
 BOSS_EVENT = pg.USEREVENT + 6
 
+END_EVENT = pg.USEREVENT + 7
+
 # game state
 IDLE = 0
 PAUSE = 1
 RUNNING = 2
 QUIT = 3
+END = 4
 
 # fall speed of enemies and buffs
 FALL_SPEED = 3
