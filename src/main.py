@@ -3,13 +3,13 @@ import random
 import pygame as pg
 import utils
 import sprites
-from rankchart import Table
 
 class PauseMenu:
-    def __init__(self):
+    def __init__(self, screen):
         self.resume_button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 50, 100, 50, text="Resume", event=utils.RESUME_EVENT)
         self.all_sprites = pg.sprite.Group()
         self.all_sprites.add(self.resume_button)
+        self.screen = screen
 
     def handle_events(self, events):
         for event in events:
@@ -18,11 +18,11 @@ class PauseMenu:
                     return utils.RESUME_EVENT
         return None
 
-    def draw(self, screen):
+    def draw(self):
         dim_surface = pg.Surface((utils.WIDTH, utils.HEIGHT), pg.SRCALPHA)
         dim_surface.fill((0, 0, 0, 128))
-        screen.blit(dim_surface, (0, 0))
-        self.all_sprites.draw(screen)
+        self.screen.blit(dim_surface, (0, 0))
+        self.all_sprites.draw(self.screen)
 
 pause_menu = None
 
@@ -37,16 +37,16 @@ def generate_buff(bullet_kind):
     return b_type
 
 
+background = utils.load_asset("background.png")
+background = pg.transform.scale(background, (utils.WIDTH, utils.HEIGHT))
+
 FPS = 60
 pg.init()
-pg.mixer.init()
 
 screen = pg.display.set_mode((utils.WIDTH, utils.HEIGHT), pg.SCALED)
 pg.display.set_caption("MH Rogue: Sky Battlefield")
 pg.mouse.set_visible(True)
 
-background = utils.load_asset("background.png")
-background = pg.transform.scale(background, (utils.WIDTH, utils.HEIGHT))
 screen.blit(background, (0, 0))
 pg.display.flip()
 clock = pg.time.Clock()
@@ -56,9 +56,6 @@ player = sprites.Player(image="ply02.png",
                         shoot_speed=1,
                         bullet_type=sprites.BulletType(damage=1, speed=-2, kind=utils.BLT_BLADE, width=50, height=10,
                                                        image="blt_b_01.png", range=100))
-bg_music = utils.load_music("music/background.mp3")
-bg_music.set_volume(0.8)  # set playback volume (0,1)
-bg_music.play(-1)
 all_sprites = pg.sprite.Group()
 all_bullets = pg.sprite.Group()
 all_enemies = pg.sprite.Group()
@@ -72,27 +69,30 @@ boss = None
 ticker = 0
 
 pg.time.set_timer(utils.SPAWN_EVENT, utils.SPAWN_TIME)
-
+# startpage.show()
+# send start event
 while game_state != utils.QUIT:
     duration = clock.tick(FPS)
     for event in pg.event.get():
         if event.type == pg.QUIT:
             game_state = utils.QUIT
-        elif event.type == utils.FIRE_EVENT and game_state == utils.RUNNING:
+        elif event.type == start:
+            startpage.clear()
+            status = runing
+        elif event.type == utils.FIRE_EVENT and game_state != utils.PAUSE:
             bullets = player.shoot()
             all_sprites.add(bullets)
             all_bullets.add(bullets)
-        elif event.type == utils.SPAWN_EVENT and game_state == utils.RUNNING:
+        elif event.type == utils.SPAWN_EVENT and game_state != utils.PAUSE:
             if not boss:
                 enemy = sprites.Enemy(
                     random.randrange(sprites.EnemyType().width // 2, utils.WIDTH - sprites.EnemyType().width // 2), 0,
-                    sprites.EnemyType(health=random.randrange(10, 100)))
+                    sprites.EnemyType(health=random.randrange(1, 10)))
             else:
                 enemy_type = sprites.EnemyType(image="boss_summon01.png", health=200, width=70, height=100)
                 enemy = sprites.Enemy(
                     random.randrange(sprites.EnemyType().width // 2, utils.WIDTH - enemy_type.width // 2), 0,
                     enemy_type)
-                utils.load_music("music/fireball.mp3").play()
             all_sprites.add(enemy)
             all_enemies.add(enemy)
         elif event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
@@ -107,17 +107,34 @@ while game_state != utils.QUIT:
             game_state = utils.RUNNING
             # todo reset all state
             pass
+        elif event.type == utils.END_EVENT:
+            game_state = utils.END
+            pause_text = pg.font.Font(None, 40).render("Game Over", True, (255, 0, 0))
+            screen.blit(pause_text, ((utils.WIDTH - pause_text.get_rect().width) // 2, utils.HEIGHT // 2))
+            btn_width, btn_height = 100, 50
+            button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 100, btn_width, btn_height,
+                                    text="Restart", event=utils.RESTART_EVENT)
+            button.draw(screen)
+            all_buttons.add(button)
+            all_sprites.add(button)
         elif event.type == pg.KEYDOWN:
             if event.key == pg.K_ESCAPE and game_state == utils.RUNNING:
                 game_state = utils.PAUSE
-                pause_menu = PauseMenu()  # Create the pause menu
+                pause_menu = PauseMenu(screen)  # Create the pause menu
+                pause_menu.draw()
     if game_state == utils.PAUSE:
-        if pause_menu:
-            # Handle pause events and potentially change the game state.
-            new_game_state = pause_menu.handle_events(pg.event.get())
-            if new_game_state == utils.RESUME_EVENT:
-                game_state = utils.RUNNING
-    else:
+        # if pause_menu:
+        #     # Handle pause events and potentially change the game state.
+        #     new_game_state = pause_menu.handle_events(pg.event.get())
+        #     if new_game_state == utils.RESUME_EVENT:
+        #         game_state = utils.RUNNING
+
+        pass
+    elif game_state == utils.IDLE:
+        pass
+    elif game_state == utils.END:    # end --> start
+        pass
+    elif game_state == utils.RUNNING:
         if ticker >= utils.BOSS_TIME and not boss:
             boss = sprites.Enemy(utils.WIDTH // 2, 0,
                                  sprites.EnemyType(image="boss01.png", health=20000, width=200, height=200, boss=True))
@@ -127,29 +144,20 @@ while game_state != utils.QUIT:
         # update position of all_sprites, make sure do calculations after this line
         all_sprites.update()
         # calculate player&enemies hits
-        player_hits = pg.sprite.groupcollide(all_enemies, all_players, True, False, collided=pg.sprite.collide_mask)
+        player_hits = pg.sprite.groupcollide(all_enemies, all_players, True, False)
         if len(player_hits) > 0:
-            pg.event.post(pg.event.Event(utils.PAUSE_EVENT))
-            utils.load_music("music/gameover.mp3").play()
-            pause_text = pg.font.Font(None, 40).render("Game Over", True, (255, 0, 0))
-            screen.blit(pause_text, ((utils.WIDTH - pause_text.get_rect().width) // 2, utils.HEIGHT // 2))
-            btn_width, btn_height = 100, 50
-            button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 100, btn_width, btn_height,
-                                    text="Restart", event=utils.RESTART_EVENT)
-            button.draw(screen)
-            all_buttons.add(button)
-            all_sprites.add(button)
+            pg.event.post(pg.event.Event(utils.END_EVENT))
+        
             continue
         # calculate bullets&enemies hits
         bullets_hits = pg.sprite.groupcollide(all_enemies, all_bullets, False, False)
-        for hit in bullets_hits:  # {"enemy1":["bullet1","bullet2"]}
+        for hit in bullets_hits: #{"enemy1":["bullet1","bullet2"]}
             for bullet in bullets_hits[hit]:
                 if bullet.type.kind == utils.BLT_AMMO:
                     bullet.kill()
                 hit.health -= bullet.type.damage
                 hit.hp_change = True
                 if hit.health <= 0:
-                    utils.load_music("music/shoot.mp3").play()
                     hit.kill()
                     animation = sprites.Animation(hit.rect.centerx, hit.rect.centery,
                                                   ["explosion/1.png", "explosion/2.png", "explosion/3.png"],
@@ -168,8 +176,6 @@ while game_state != utils.QUIT:
         # refresh screen and draw all_sprites
         screen.blit(background, (0, 0))
         time_text = pg.font.Font(None, 36).render("Time: " + utils.format_number(ticker // 1000), True, (255, 255, 255))
-        # table = Table(screen, ["Rank", "Name", "Score"], [(1, "ljy", 100), (2, "ljy", 100), (3, "ljy", 100)])
-        # table.draw()
         screen.blit(time_text, (10, 10))
         all_sprites.draw(screen)
 
