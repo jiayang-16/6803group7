@@ -16,13 +16,15 @@ BOSS_EVENT = pg.USEREVENT + 6
 
 END_EVENT = pg.USEREVENT + 7
 
+START_EVENT = pg.USEREVENT + 8
+
 # game state
 IDLE = 0
 PAUSE = 1
 RUNNING = 2
 QUIT = 3
 END = 4
-
+START = 5
 # fall speed of enemies and buffs
 FALL_SPEED = 3
 # spawn time of enemies
