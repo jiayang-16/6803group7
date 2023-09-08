@@ -4,11 +4,42 @@ import pygame as pg
 import utils
 import sprites
 
+
+class StartPage:
+    def __init__(self, screen):
+        global all_sprites
+        global all_buttons
+        self.start_button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 50, 100, 50, text="Start", event=utils.START_EVENT)
+        all_sprites.add(self.start_button)
+        all_buttons.add(self.start_button)
+        self.screen = screen
+
+    def handle_events(self, events):
+        for event in events:
+            if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+                if self.start_button.rect.collidepoint(event.pos):
+                    return utils.START_EVENT
+        return None
+
+    def draw(self):
+        dim_surface = pg.Surface((utils.WIDTH, utils.HEIGHT), pg.SRCALPHA)
+        dim_surface.fill((0, 0, 0, 128))
+        self.screen.blit(dim_surface, (0, 0))
+        all_sprites.draw(self.screen)
+
+    def clear():
+        pass
+
+start_page = None
+
 class PauseMenu:
     def __init__(self, screen):
+        global all_sprites
+        global all_buttons
         self.resume_button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 50, 100, 50, text="Resume", event=utils.RESUME_EVENT)
-        self.all_sprites = pg.sprite.Group()
-        self.all_sprites.add(self.resume_button)
+    
+        all_sprites.add(self.resume_button)
+        all_buttons.add(self.resume_button)
         self.screen = screen
 
     def handle_events(self, events):
@@ -22,7 +53,11 @@ class PauseMenu:
         dim_surface = pg.Surface((utils.WIDTH, utils.HEIGHT), pg.SRCALPHA)
         dim_surface.fill((0, 0, 0, 128))
         self.screen.blit(dim_surface, (0, 0))
-        self.all_sprites.draw(self.screen)
+        all_sprites.draw(self.screen)
+
+    def clear(self):
+        self.resume_button.kill()
+    
 
 pause_menu = None
 
@@ -62,23 +97,25 @@ all_enemies = pg.sprite.Group()
 all_buffs = pg.sprite.Group()
 all_players = pg.sprite.Group()
 all_buttons = pg.sprite.Group()
-all_players.add(player)
-all_sprites.add(player)
-game_state = utils.RUNNING
+
+game_state = utils.START
 boss = None
 ticker = 0
 
 pg.time.set_timer(utils.SPAWN_EVENT, utils.SPAWN_TIME)
-# startpage.show()
-# send start event
+start_page = StartPage(screen)
+start_page.draw()
+game_state = utils.START
 while game_state != utils.QUIT:
     duration = clock.tick(FPS)
     for event in pg.event.get():
         if event.type == pg.QUIT:
             game_state = utils.QUIT
-        elif event.type == start:
-            startpage.clear()
-            status = runing
+        elif event.type == utils.START_EVENT:
+            StartPage.clear()
+            game_state = utils.RUNNING
+            all_players.add(player)
+            all_sprites.add(player)
         elif event.type == utils.FIRE_EVENT and game_state != utils.PAUSE:
             bullets = player.shoot()
             all_sprites.add(bullets)
@@ -102,6 +139,8 @@ while game_state != utils.QUIT:
             game_state = utils.PAUSE
         elif event.type == utils.RESUME_EVENT:
             game_state = utils.RUNNING
+            for b in all_buttons:
+                b.kill()
         elif event.type == utils.RESTART_EVENT:
             print("restart")
             game_state = utils.RUNNING
