@@ -104,9 +104,9 @@ class Enemy(pg.sprite.Sprite):
             self.image = pg.Surface((type.width, type.height))
             self.image.fill((255, 0, 0))
         else:
-            self.imagesrc = utils.load_asset(type.image)
-            self.mask = utils.load_mask(type.image)
-            self.image = pg.transform.scale(self.imagesrc, (type.width, type.height))
+            self.imagesrc = pg.transform.scale(utils.load_asset(type.image), (type.width, type.height))
+            self.mask = pg.mask.from_surface(self.imagesrc)
+            self.image = self.imagesrc.copy()
         self.rect = self.image.get_rect()
         self.rect.bottom = y
         self.rect.centerx = x
@@ -119,13 +119,13 @@ class Enemy(pg.sprite.Sprite):
     def update(self):
         if self.hp_change:
             # refresh image to show health
-            self.image = pg.transform.scale(self.imagesrc, (self.rect.width, self.rect.height))
+            self.image = self.imagesrc.copy()
             text = self.font.render(utils.format_number(self.health), True, (255, 0, 0))
             self.image.blit(text, (0, 0))
             self.hp_change = False
         if not self.type.boss or (self.type.boss and self.rect.bottom < utils.HEIGHT // 3):
             self.rect.y += self.speed
-        if self.rect.bottom > utils.HEIGHT:
+        if self.rect.top > utils.HEIGHT:
             self.kill()
 
 
@@ -138,7 +138,7 @@ class Player(pg.sprite.Sprite):
         else:
             self.image = utils.load_asset(image)
             self.image = pg.transform.scale(self.image, (50, 50))
-            self.mask = utils.load_mask(image)
+            self.mask = pg.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.centerx = utils.WIDTH / 2
         self.rect.bottom = utils.HEIGHT - 10

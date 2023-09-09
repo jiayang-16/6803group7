@@ -16,16 +16,16 @@ def generate_buff(bullet_kind):
     return b_type
 
 
-background = utils.load_asset("background.png")
-background = pg.transform.scale(background, (utils.WIDTH, utils.HEIGHT))
-
 FPS = 60
 pg.init()
+pg.mixer.init()
 
 screen = pg.display.set_mode((utils.WIDTH, utils.HEIGHT), pg.SCALED)
 pg.display.set_caption("MH Rogue: Sky Battlefield")
 pg.mouse.set_visible(True)
 
+background = utils.load_asset("background.png")
+background = pg.transform.scale(background, (utils.WIDTH, utils.HEIGHT))
 screen.blit(background, (0, 0))
 pg.display.flip()
 clock = pg.time.Clock()
@@ -35,6 +35,9 @@ player = sprites.Player(image="ply02.png",
                         shoot_speed=1,
                         bullet_type=sprites.BulletType(damage=1, speed=-2, kind=utils.BLT_BLADE, width=50, height=10,
                                                        image="blt_b_01.png", range=100))
+bg_music = utils.load_music("music/background.mp3")
+bg_music.set_volume(0.8)  # set playback volume (0,1)
+bg_music.play(-1)
 all_sprites = pg.sprite.Group()
 all_bullets = pg.sprite.Group()
 all_enemies = pg.sprite.Group()
@@ -43,7 +46,7 @@ all_players = pg.sprite.Group()
 all_buttons = pg.sprite.Group()
 all_players.add(player)
 all_sprites.add(player)
-game_state = utils.IDLE
+game_state = utils.RUNNING
 boss = None
 ticker = 0
 
@@ -61,12 +64,13 @@ while game_state != utils.QUIT:
             if not boss:
                 enemy = sprites.Enemy(
                     random.randrange(sprites.EnemyType().width // 2, utils.WIDTH - sprites.EnemyType().width // 2), 0,
-                    sprites.EnemyType(health=random.randrange(1, 10)))
+                    sprites.EnemyType(health=random.randrange(10, 100)))
             else:
                 enemy_type = sprites.EnemyType(image="boss_summon01.png", health=200, width=70, height=100)
                 enemy = sprites.Enemy(
                     random.randrange(sprites.EnemyType().width // 2, utils.WIDTH - enemy_type.width // 2), 0,
                     enemy_type)
+                utils.load_music("music/fireball.mp3").play()
             all_sprites.add(enemy)
             all_enemies.add(enemy)
         elif event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
@@ -93,9 +97,10 @@ while game_state != utils.QUIT:
         # update position of all_sprites, make sure do calculations after this line
         all_sprites.update()
         # calculate player&enemies hits
-        player_hits = pg.sprite.groupcollide(all_enemies, all_players, True, False)
+        player_hits = pg.sprite.groupcollide(all_enemies, all_players, True, False, collided=pg.sprite.collide_mask)
         if len(player_hits) > 0:
             pg.event.post(pg.event.Event(utils.PAUSE_EVENT))
+            utils.load_music("music/gameover.mp3").play()
             pause_text = pg.font.Font(None, 40).render("Game Over", True, (255, 0, 0))
             screen.blit(pause_text, ((utils.WIDTH - pause_text.get_rect().width) // 2, utils.HEIGHT // 2))
             btn_width, btn_height = 100, 50
@@ -114,6 +119,7 @@ while game_state != utils.QUIT:
                 hit.health -= bullet.type.damage
                 hit.hp_change = True
                 if hit.health <= 0:
+                    utils.load_music("music/shoot.mp3").play()
                     hit.kill()
                     animation = sprites.Animation(hit.rect.centerx, hit.rect.centery,
                                                   ["explosion/1.png", "explosion/2.png", "explosion/3.png"],

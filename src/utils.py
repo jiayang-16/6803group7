@@ -1,3 +1,5 @@
+import math
+
 import pygame as pg
 import os
 
@@ -23,7 +25,7 @@ QUIT = 3
 # fall speed of enemies and buffs
 FALL_SPEED = 3
 # spawn time of enemies
-SPAWN_TIME = 2000
+SPAWN_TIME = 1000
 # screen size
 WIDTH, HEIGHT = 480, 720
 # boss respawn time
@@ -37,6 +39,7 @@ main_dir = os.path.abspath(__file__)
 res_dir = os.path.join(os.path.dirname(os.path.dirname(main_dir)), "res")
 assets = {}
 masks = {}
+music = {}
 
 
 # tool to load assets, avoid loading the same asset multiple times
@@ -44,21 +47,22 @@ def load_asset(name):
     if name in assets:
         return assets[name]
     else:
-        assets[name] = pg.image.load(os.path.join(res_dir, name))
+        assets[name] = pg.image.load(os.path.join(res_dir, name)).convert_alpha()
         return assets[name]
 
-
-def load_mask(name):
-    if name in masks:
-        return masks[name]
+def load_music(name):
+    if name in music:
+        return music[name]
     else:
-        masks[name] = pg.mask.from_surface(load_asset(name))
-        return masks[name]
+        music[name] = pg.mixer.Sound(os.path.join(res_dir, name))
+        music[name].set_volume(0.5)
+        return music[name]
 
 
 def format_number(n):
     suffixes = ['k', 'm', 'b', 't']  # 后缀，可根据需要扩展
-    n = int(n)
+    if isinstance(n, float):
+        n = math.ceil(n)
     if n < 1000:
         return str(n)
     for i, suffix in enumerate(suffixes):
