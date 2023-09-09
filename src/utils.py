@@ -36,6 +36,7 @@ BLT_BLADE = 1
 main_dir = os.path.abspath(__file__)
 res_dir = os.path.join(os.path.dirname(os.path.dirname(main_dir)), "res")
 assets = {}
+masks = {}
 
 
 # tool to load assets, avoid loading the same asset multiple times
@@ -45,6 +46,14 @@ def load_asset(name):
     else:
         assets[name] = pg.image.load(os.path.join(res_dir, name))
         return assets[name]
+
+
+def load_mask(name):
+    if name in masks:
+        return masks[name]
+    else:
+        masks[name] = pg.mask.from_surface(load_asset(name))
+        return masks[name]
 
 
 def format_number(n):

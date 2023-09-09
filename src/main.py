@@ -3,6 +3,7 @@ import random
 import pygame as pg
 import utils
 import sprites
+from rankchart import Table
 
 
 def generate_buff(bullet_kind):
@@ -52,11 +53,11 @@ while game_state != utils.QUIT:
     for event in pg.event.get():
         if event.type == pg.QUIT:
             game_state = utils.QUIT
-        elif event.type == utils.FIRE_EVENT and game_state != utils.PAUSE:
+        elif event.type == utils.FIRE_EVENT and game_state == utils.RUNNING:
             bullets = player.shoot()
             all_sprites.add(bullets)
             all_bullets.add(bullets)
-        elif event.type == utils.SPAWN_EVENT and game_state != utils.PAUSE:
+        elif event.type == utils.SPAWN_EVENT and game_state == utils.RUNNING:
             if not boss:
                 enemy = sprites.Enemy(
                     random.randrange(sprites.EnemyType().width // 2, utils.WIDTH - sprites.EnemyType().width // 2), 0,
@@ -106,7 +107,7 @@ while game_state != utils.QUIT:
             continue
         # calculate bullets&enemies hits
         bullets_hits = pg.sprite.groupcollide(all_enemies, all_bullets, False, False)
-        for hit in bullets_hits: #{"enemy1":["bullet1","bullet2"]}
+        for hit in bullets_hits:  # {"enemy1":["bullet1","bullet2"]}
             for bullet in bullets_hits[hit]:
                 if bullet.type.kind == utils.BLT_AMMO:
                     bullet.kill()
@@ -131,6 +132,8 @@ while game_state != utils.QUIT:
         # refresh screen and draw all_sprites
         screen.blit(background, (0, 0))
         time_text = pg.font.Font(None, 36).render("Time: " + utils.format_number(ticker // 1000), True, (255, 255, 255))
+        # table = Table(screen, ["Rank", "Name", "Score"], [(1, "ljy", 100), (2, "ljy", 100), (3, "ljy", 100)])
+        # table.draw()
         screen.blit(time_text, (10, 10))
         all_sprites.draw(screen)
 
