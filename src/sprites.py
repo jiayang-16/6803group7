@@ -105,6 +105,7 @@ class Enemy(pg.sprite.Sprite):
             self.image.fill((255, 0, 0))
         else:
             self.imagesrc = utils.load_asset(type.image)
+            self.mask = utils.load_mask(type.image)
             self.image = pg.transform.scale(self.imagesrc, (type.width, type.height))
         self.rect = self.image.get_rect()
         self.rect.bottom = y
@@ -137,6 +138,7 @@ class Player(pg.sprite.Sprite):
         else:
             self.image = utils.load_asset(image)
             self.image = pg.transform.scale(self.image, (50, 50))
+            self.mask = utils.load_mask(image)
         self.rect = self.image.get_rect()
         self.rect.centerx = utils.WIDTH / 2
         self.rect.bottom = utils.HEIGHT - 10
