@@ -62,6 +62,16 @@ class PauseMenu:
 pause_menu = None
 
 
+def reset_game():
+    global game_state,start_page,all_buttons
+
+    for button in all_buttons:
+        button.kill()
+    
+    game_state = utils.START
+    start_page = StartPage(screen)
+    start_page.draw()
+
 def generate_buff(bullet_kind):
     b_type = None
     r = random.randint(0, 1)
@@ -134,7 +144,7 @@ while game_state != utils.QUIT:
             all_enemies.add(enemy)
         elif event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
             for btn in all_buttons:
-                btn.is_clicked(event.pos)
+                btn.is_clicked(event.pos)  
         elif event.type == utils.PAUSE_EVENT:
             game_state = utils.PAUSE
         elif event.type == utils.RESUME_EVENT:
@@ -143,19 +153,18 @@ while game_state != utils.QUIT:
                 b.kill()
         elif event.type == utils.RESTART_EVENT:
             print("restart")
-            game_state = utils.RUNNING
-            # todo reset all state
-            pass
+            reset_game()
         elif event.type == utils.END_EVENT:
             game_state = utils.END
             pause_text = pg.font.Font(None, 40).render("Game Over", True, (255, 0, 0))
             screen.blit(pause_text, ((utils.WIDTH - pause_text.get_rect().width) // 2, utils.HEIGHT // 2))
-            btn_width, btn_height = 100, 50
+            btn_width, btn_height = 250, 50
             button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 100, btn_width, btn_height,
-                                    text="Restart", event=utils.RESTART_EVENT)
+                                    text="Back to main menu", event=utils.RESTART_EVENT)
             button.draw(screen)
             all_buttons.add(button)
             all_sprites.add(button)
+            
         elif event.type == pg.KEYDOWN:
             if event.key == pg.K_ESCAPE and game_state == utils.RUNNING:
                 game_state = utils.PAUSE
