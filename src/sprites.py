@@ -230,7 +230,8 @@ class Animation(pg.sprite.Sprite):
 # once: whether dismiss the button after clicked
 class Button(pg.sprite.Sprite):
     def __init__(self, x, y, width, height, event, font_size=36, text="", text_color=(255, 255, 255), image=None,
-                 once=True):
+                 once=True, border=False):
+        self.border = border
         pg.sprite.Sprite.__init__(self)
         if not image:
             self.image = pg.Surface((width, height))
@@ -243,6 +244,7 @@ class Button(pg.sprite.Sprite):
         self.rect.centery = y
         self.once = once
         self.event = event
+        self.selected = False
         font = pg.font.Font(None, font_size)
         text = font.render(text, True, text_color)
         self.image.blit(text, ((width - text.get_rect().width) // 2, (height - text.get_rect().height) // 2))
@@ -253,10 +255,20 @@ class Button(pg.sprite.Sprite):
     def is_clicked(self, pos):
         is_clicked = self.rect.collidepoint(pos)
         if is_clicked:
-            pg.event.post(pg.event.Event(self.event))
+            if isinstance(self.event, int):
+                pg.event.post(pg.event.Event(self.event))
+            else:
+                self.event()
             if self.once:
                 self.kill()
+            else:
+                self.selected = True
         return is_clicked
 
     def draw(self, screen):
         screen.blit(self.image, self.rect)
+        if self.border:
+            if self.selected:
+                pg.draw.rect(screen, (0, 255, 0), self.rect, 1)
+            else:
+                pg.draw.rect(screen, (255, 255, 255), self.rect, 1)

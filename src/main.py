@@ -3,74 +3,123 @@ import random
 import pygame as pg
 import utils
 import sprites
+from rankchart import Table
 
 
 class StartPage:
     def __init__(self, screen):
-        global all_sprites
-        global all_buttons
-        self.start_button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 50, 100, 50, text="Start", event=utils.START_EVENT)
-        all_sprites.add(self.start_button)
-        all_buttons.add(self.start_button)
+        self.start_button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 50, 100, 50, text="Start",
+                                           event=utils.START_EVENT)
+        self.wp1_button = sprites.Button(utils.WIDTH // 2 - 50, utils.HEIGHT // 2 + 150, 50, 50, image="ply01.png",
+                                         event=lambda: self.select_weapon(utils.BLT_AMMO), once=False, border=True)
+        self.wp2_button = sprites.Button(utils.WIDTH // 2 + 50, utils.HEIGHT // 2 + 150, 50, 50, image="ply02.png",
+                                         event=lambda: self.select_weapon(utils.BLT_BLADE), once=False, border=True)
+        self.select_weapon(utils.BLT_AMMO)
         self.screen = screen
 
-    def handle_events(self, events):
-        for event in events:
-            if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
-                if self.start_button.rect.collidepoint(event.pos):
-                    return utils.START_EVENT
-        return None
+    def select_weapon(self, type):
+        global player
+        if type == utils.BLT_BLADE:
+            player = sprites.Player(image="ply02.png",
+                                    shoot_speed=1,
+                                    bullet_type=sprites.BulletType(damage=1, speed=-2, kind=utils.BLT_BLADE, width=50,
+                                                                   height=10,
+                                                                   image="blt_b_01.png", range=100))
+            self.wp1_button.selected = False
+            self.wp2_button.selected = True
+            self.wp2_button.draw(screen)
+            self.wp1_button.draw(screen)
+        elif type == utils.BLT_AMMO:
+            player = sprites.Player(image="ply01.png",
+                                    shoot_speed=1,
+                                    bullet_type=sprites.BulletType(damage=1, speed=-2, kind=utils.BLT_AMMO, width=10,
+                                                                   height=20,
+                                                                   image="blt_a_01.png"))
+            self.wp2_button.selected = False
+            self.wp1_button.selected = True
+            self.wp2_button.draw(screen)
+            self.wp1_button.draw(screen)
 
     def draw(self):
+        self.screen.blit(background, (0, 0))
         dim_surface = pg.Surface((utils.WIDTH, utils.HEIGHT), pg.SRCALPHA)
         dim_surface.fill((0, 0, 0, 128))
         self.screen.blit(dim_surface, (0, 0))
-        all_sprites.draw(self.screen)
+        if len(player_name) == 0:
+            text = pg.font.Font(None, 36).render("Please input your name", True, (255, 255, 255))
+        else:
+            text = pg.font.Font(None, 36).render(player_name, True, (255, 255, 255))
+        self.screen.blit(text, ((utils.WIDTH - text.get_rect().width) // 2, utils.HEIGHT // 2 - 50))
+        all_sprites.add(self.start_button)
+        all_buttons.add(self.start_button)
+        all_sprites.add(self.wp1_button)
+        all_buttons.add(self.wp1_button)
+        all_sprites.add(self.wp2_button)
+        all_buttons.add(self.wp2_button)
+        self.start_button.draw(screen)
+        self.wp1_button.draw(screen)
+        self.wp2_button.draw(screen)
 
-    def clear():
+    def clear(self):
+        self.start_button.kill()
+        self.wp1_button.kill()
+        self.wp2_button.kill()
         pass
 
-start_page = None
 
 class PauseMenu:
     def __init__(self, screen):
-        global all_sprites
-        global all_buttons
-        self.resume_button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 50, 100, 50, text="Resume", event=utils.RESUME_EVENT)
-    
-        all_sprites.add(self.resume_button)
-        all_buttons.add(self.resume_button)
+        self.resume_button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 50, 100, 50, text="Resume",
+                                            event=utils.RESUME_EVENT)
         self.screen = screen
-
-    def handle_events(self, events):
-        for event in events:
-            if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
-                if self.resume_button.rect.collidepoint(event.pos):
-                    return utils.RESUME_EVENT
-        return None
 
     def draw(self):
         dim_surface = pg.Surface((utils.WIDTH, utils.HEIGHT), pg.SRCALPHA)
         dim_surface.fill((0, 0, 0, 128))
         self.screen.blit(dim_surface, (0, 0))
-        all_sprites.draw(self.screen)
+        all_sprites.add(self.resume_button)
+        all_buttons.add(self.resume_button)
+        self.resume_button.draw(screen)
 
     def clear(self):
         self.resume_button.kill()
-    
 
-pause_menu = None
+
+class EndPage:
+    def __init__(self, screen):
+        self.button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 100, 250, 50,
+                                     text="Back to main menu", event=utils.RESTART_EVENT)
+        self.screen = screen
+
+    def draw(self):
+        dim_surface = pg.Surface((utils.WIDTH, utils.HEIGHT), pg.SRCALPHA)
+        dim_surface.fill((0, 0, 0, 128))
+        self.screen.blit(dim_surface, (0, 0))
+        pause_text = pg.font.Font(None, 40).render("Game Over", True, (255, 0, 0))
+        screen.blit(pause_text, ((utils.WIDTH - pause_text.get_rect().width) // 2, utils.HEIGHT // 2))
+        all_sprites.add(self.button)
+        all_buttons.add(self.button)
+        self.button.draw(screen)
+
+    def clear(self):
+        self.button.kill()
 
 
 def reset_game():
-    global game_state,start_page,all_buttons
-
-    for button in all_buttons:
-        button.kill()
-    
+    global game_state, player, boss, ticker
+    all_sprites.empty()
+    all_bullets.empty()
+    all_enemies.empty()
+    all_buffs.empty()
+    all_players.empty()
+    all_buttons.empty()
+    boss = None
+    ticker = 0
     game_state = utils.START
-    start_page = StartPage(screen)
+    start_page.select_weapon(utils.BLT_AMMO)
     start_page.draw()
+    bg_music.play(-1)
+
 
 def generate_buff(bullet_kind):
     b_type = None
@@ -82,55 +131,56 @@ def generate_buff(bullet_kind):
     return b_type
 
 
-background = utils.load_asset("background.png")
-background = pg.transform.scale(background, (utils.WIDTH, utils.HEIGHT))
-
 FPS = 60
 pg.init()
+pg.mixer.init()
 
 screen = pg.display.set_mode((utils.WIDTH, utils.HEIGHT), pg.SCALED)
 pg.display.set_caption("MH Rogue: Sky Battlefield")
 pg.mouse.set_visible(True)
 
+background = utils.load_asset("background.png")
+background = pg.transform.scale(background, (utils.WIDTH, utils.HEIGHT))
 screen.blit(background, (0, 0))
 pg.display.flip()
 clock = pg.time.Clock()
-
+bg_music = utils.load_music("music/background.mp3")
+bg_music.set_volume(1)  # set playback volume (0,1)
+bg_music.play(-1)
 # -----------------all things have to be reset when restart game-----------------
-player = sprites.Player(image="ply02.png",
-                        shoot_speed=1,
-                        bullet_type=sprites.BulletType(damage=1, speed=-2, kind=utils.BLT_BLADE, width=50, height=10,
-                                                       image="blt_b_01.png", range=100))
+player = None
 all_sprites = pg.sprite.Group()
 all_bullets = pg.sprite.Group()
 all_enemies = pg.sprite.Group()
 all_buffs = pg.sprite.Group()
 all_players = pg.sprite.Group()
 all_buttons = pg.sprite.Group()
-
-game_state = utils.START
 boss = None
 ticker = 0
 
+player_name = ""
 pg.time.set_timer(utils.SPAWN_EVENT, utils.SPAWN_TIME)
 start_page = StartPage(screen)
 start_page.draw()
+pause_menu = PauseMenu(screen)  # Create the pause menu
+end_page = EndPage(screen)
 game_state = utils.START
+
 while game_state != utils.QUIT:
     duration = clock.tick(FPS)
     for event in pg.event.get():
         if event.type == pg.QUIT:
             game_state = utils.QUIT
         elif event.type == utils.START_EVENT:
-            StartPage.clear()
+            start_page.clear()
             game_state = utils.RUNNING
             all_players.add(player)
             all_sprites.add(player)
-        elif event.type == utils.FIRE_EVENT and game_state != utils.PAUSE:
+        elif event.type == utils.FIRE_EVENT and game_state == utils.RUNNING:
             bullets = player.shoot()
             all_sprites.add(bullets)
             all_bullets.add(bullets)
-        elif event.type == utils.SPAWN_EVENT and game_state != utils.PAUSE:
+        elif event.type == utils.SPAWN_EVENT and game_state == utils.RUNNING:
             if not boss:
                 enemy = sprites.Enemy(
                     random.randrange(sprites.EnemyType().width // 2, utils.WIDTH - sprites.EnemyType().width // 2), 0,
@@ -140,36 +190,40 @@ while game_state != utils.QUIT:
                 enemy = sprites.Enemy(
                     random.randrange(sprites.EnemyType().width // 2, utils.WIDTH - enemy_type.width // 2), 0,
                     enemy_type)
+                utils.load_music("music/fireball.mp3").play()
             all_sprites.add(enemy)
             all_enemies.add(enemy)
         elif event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
             for btn in all_buttons:
-                btn.is_clicked(event.pos)  
+                btn.is_clicked(event.pos)
         elif event.type == utils.PAUSE_EVENT:
             game_state = utils.PAUSE
+            pause_menu.draw()
         elif event.type == utils.RESUME_EVENT:
             game_state = utils.RUNNING
-            for b in all_buttons:
-                b.kill()
+            pause_menu.clear()
         elif event.type == utils.RESTART_EVENT:
             print("restart")
             reset_game()
         elif event.type == utils.END_EVENT:
             game_state = utils.END
-            pause_text = pg.font.Font(None, 40).render("Game Over", True, (255, 0, 0))
-            screen.blit(pause_text, ((utils.WIDTH - pause_text.get_rect().width) // 2, utils.HEIGHT // 2))
-            btn_width, btn_height = 250, 50
-            button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 100, btn_width, btn_height,
-                                    text="Back to main menu", event=utils.RESTART_EVENT)
-            button.draw(screen)
-            all_buttons.add(button)
-            all_sprites.add(button)
-            
+            bg_music.stop()
+            end_page.draw()
+
         elif event.type == pg.KEYDOWN:
-            if event.key == pg.K_ESCAPE and game_state == utils.RUNNING:
-                game_state = utils.PAUSE
-                pause_menu = PauseMenu(screen)  # Create the pause menu
-                pause_menu.draw()
+            if event.key == pg.K_ESCAPE:
+                if game_state == utils.RUNNING:
+                    pg.event.post(pg.event.Event(utils.PAUSE_EVENT))
+                elif game_state == utils.PAUSE:
+                    pg.event.post(pg.event.Event(utils.RESUME_EVENT))
+            else:
+                if game_state == utils.START:  # input player name
+                    if event.key == pg.K_BACKSPACE:
+                        player_name = player_name[:-1]
+                    elif (event.unicode.isalpha() or event.unicode.isdigit()) and len(player_name) < 12:
+                        player_name += event.unicode
+                    start_page.draw()
+
     if game_state == utils.PAUSE:
         # if pause_menu:
         #     # Handle pause events and potentially change the game state.
@@ -180,7 +234,7 @@ while game_state != utils.QUIT:
         pass
     elif game_state == utils.IDLE:
         pass
-    elif game_state == utils.END:    # end --> start
+    elif game_state == utils.END:  # end --> start
         pass
     elif game_state == utils.RUNNING:
         if ticker >= utils.BOSS_TIME and not boss:
@@ -192,20 +246,21 @@ while game_state != utils.QUIT:
         # update position of all_sprites, make sure do calculations after this line
         all_sprites.update()
         # calculate player&enemies hits
-        player_hits = pg.sprite.groupcollide(all_enemies, all_players, True, False)
+        player_hits = pg.sprite.groupcollide(all_enemies, all_players, True, False, collided=pg.sprite.collide_mask)
         if len(player_hits) > 0:
             pg.event.post(pg.event.Event(utils.END_EVENT))
-        
+            utils.load_music("music/gameover.mp3").play()
             continue
         # calculate bullets&enemies hits
         bullets_hits = pg.sprite.groupcollide(all_enemies, all_bullets, False, False)
-        for hit in bullets_hits: #{"enemy1":["bullet1","bullet2"]}
+        for hit in bullets_hits:  # {"enemy1":["bullet1","bullet2"]}
             for bullet in bullets_hits[hit]:
                 if bullet.type.kind == utils.BLT_AMMO:
                     bullet.kill()
                 hit.health -= bullet.type.damage
                 hit.hp_change = True
                 if hit.health <= 0:
+                    utils.load_music("music/shoot.mp3").play()
                     hit.kill()
                     animation = sprites.Animation(hit.rect.centerx, hit.rect.centery,
                                                   ["explosion/1.png", "explosion/2.png", "explosion/3.png"],
@@ -224,6 +279,8 @@ while game_state != utils.QUIT:
         # refresh screen and draw all_sprites
         screen.blit(background, (0, 0))
         time_text = pg.font.Font(None, 36).render("Time: " + utils.format_number(ticker // 1000), True, (255, 255, 255))
+        # table = Table(screen, ["Rank", "Name", "Score"], [(1, "ljy", 100), (2, "ljy", 100), (3, "ljy", 100)])
+        # table.draw()
         screen.blit(time_text, (10, 10))
         all_sprites.draw(screen)
 

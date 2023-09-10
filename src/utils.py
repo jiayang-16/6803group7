@@ -60,7 +60,7 @@ def load_music(name):
         return music[name]
     else:
         music[name] = pg.mixer.Sound(os.path.join(res_dir, name))
-        music[name].set_volume(0.5)
+        music[name].set_volume(0.4)
         return music[name]
 
 
