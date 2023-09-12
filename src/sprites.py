@@ -1,3 +1,5 @@
+import math
+
 import pygame as pg
 import utils
 
@@ -98,7 +100,7 @@ class EnemyType:
 
 
 class Enemy(pg.sprite.Sprite):
-    def __init__(self, x, y, type=EnemyType()):
+    def __init__(self, x, y, type=EnemyType(), speed=(0, utils.FALL_SPEED), bounce=False):
         pg.sprite.Sprite.__init__(self)
         if not type.image:
             self.image = pg.Surface((type.width, type.height))
@@ -110,23 +112,58 @@ class Enemy(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.bottom = y
         self.rect.centerx = x
-        self.speed = utils.FALL_SPEED
+        self.speed = list(speed)
         self.health = type.health
         self.type = type
+        self.bounce = bounce
         self.font = pg.font.Font(None, 40)
         self.hp_change = True
+
+    # reach the edge of screen
+    # return 0/1/2/3 for left/right/top/bottom
+    def reach_edge(self):
+        if self.rect.left < 0:
+            return 0
+        elif self.rect.right > utils.WIDTH:
+            return 1
+        elif self.rect.top < 0:
+            return 2
+        elif self.rect.bottom > utils.HEIGHT:
+            return 3
+        return -1
 
     def update(self):
         if self.hp_change:
             # refresh image to show health
-            self.image = self.imagesrc.copy()
+            theta = 180 / math.pi * math.atan(self.speed[0] / self.speed[1])
+            if self.speed[1] < 0:
+                theta += 180
+            self.image = pg.transform.rotate(self.imagesrc, theta)
             text = self.font.render(utils.format_number(self.health), True, (255, 0, 0))
             self.image.blit(text, (0, 0))
             self.hp_change = False
         if not self.type.boss or (self.type.boss and self.rect.bottom < utils.HEIGHT // 3):
-            self.rect.y += self.speed
-        if self.rect.top > utils.HEIGHT:
-            self.kill()
+            self.rect.x += self.speed[0]
+            self.rect.y += self.speed[1]
+        reach = self.reach_edge()
+        if reach >= 0:
+            if not self.bounce:
+                pass
+            else:
+                if reach == 0:
+                    self.speed[0] = -self.speed[0]
+                elif reach == 1:
+                    self.speed[0] = -self.speed[0]
+                elif reach == 3:
+                    self.speed[1] = -self.speed[1]
+                print(math.atan(self.speed[0] / self.speed[1]))
+                theta = 180 / math.pi * math.atan(self.speed[0] / self.speed[1])
+                if self.speed[1] < 0:
+                    theta += 180
+                self.image = pg.transform.rotate(self.imagesrc, theta)
+                text = self.font.render(utils.format_number(self.health), True, (255, 0, 0))
+                self.image.blit(text, (0, 0))
+                self.mask = pg.mask.from_surface(self.image)
 
 
 class Player(pg.sprite.Sprite):
