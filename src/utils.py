@@ -28,7 +28,7 @@ QUIT = 3
 END = 4
 START = 5
 # fall speed of enemies and buffs
-FALL_SPEED = 3
+FALL_SPEED = 5
 # spawn time of enemies
 SPAWN_TIME = 1000
 # screen size

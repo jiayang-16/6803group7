@@ -31,7 +31,7 @@ class StartPage:
             self.wp1_button.draw(screen)
         elif type == utils.BLT_AMMO:
             player = sprites.Player(image="ply01.png",
-                                    shoot_speed=1,
+                                    shoot_speed=2,
                                     bullet_type=sprites.BulletType(damage=1, speed=-2, kind=utils.BLT_AMMO, width=10,
                                                                    height=20,
                                                                    image="blt_a_01.png"))
@@ -187,9 +187,11 @@ while game_state != utils.QUIT:
                     sprites.EnemyType(health=random.randrange(1, 10)))
             else:
                 enemy_type = sprites.EnemyType(image="boss_summon01.png", health=200, width=70, height=100)
+                random_x_speed = random.randrange(-3, 3)
+                random_y_speed = utils.FALL_SPEED - abs(random_x_speed)
                 enemy = sprites.Enemy(
                     random.randrange(sprites.EnemyType().width // 2, utils.WIDTH - enemy_type.width // 2), 0,
-                    enemy_type)
+                    enemy_type, speed=(random_x_speed, random_y_speed), bounce=True)
                 utils.load_music("music/fireball.mp3").play()
             all_sprites.add(enemy)
             all_enemies.add(enemy)
