@@ -90,16 +90,19 @@ class EndPage:
         self.button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 100, 250, 50,
                                      text="Back to main menu", event=utils.RESTART_EVENT)
         self.screen = screen
+        self.rankchart = Table(screen)
 
-    def draw(self):
+    def draw(self, text="Game Over"):
         dim_surface = pg.Surface((utils.WIDTH, utils.HEIGHT), pg.SRCALPHA)
         dim_surface.fill((0, 0, 0, 128))
         self.screen.blit(dim_surface, (0, 0))
-        pause_text = pg.font.Font(None, 40).render("Game Over", True, (255, 0, 0))
+        pause_text = pg.font.Font(None, 40).render(text, True, (255, 0, 0))
         screen.blit(pause_text, ((utils.WIDTH - pause_text.get_rect().width) // 2, utils.HEIGHT // 2))
         all_sprites.add(self.button)
         all_buttons.add(self.button)
         self.button.draw(screen)
+        self.rankchart.update(player_name,100)
+        self.rankchart.draw()
 
     def clear(self):
         self.button.kill()
@@ -211,6 +214,10 @@ while game_state != utils.QUIT:
             game_state = utils.END
             bg_music.stop()
             end_page.draw()
+        elif event.type == utils.WIN_EVENT:
+            game_state = utils.END
+            bg_music.stop()
+            end_page.draw("You Win!")
 
         elif event.type == pg.KEYDOWN:
             if event.key == pg.K_ESCAPE:
@@ -262,6 +269,9 @@ while game_state != utils.QUIT:
                 hit.health -= bullet.type.damage
                 hit.hp_change = True
                 if hit.health <= 0:
+                    if hit.type.boss:
+                        pg.event.post(pg.event.Event(utils.WIN_EVENT))
+                        continue
                     utils.load_music("music/shoot.mp3").play()
                     hit.kill()
                     animation = sprites.Animation(hit.rect.centerx, hit.rect.centery,

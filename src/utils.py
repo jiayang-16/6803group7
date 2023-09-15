@@ -20,6 +20,8 @@ END_EVENT = pg.USEREVENT + 7
 
 START_EVENT = pg.USEREVENT + 8
 
+WIN_EVENT = pg.USEREVENT + 9
+
 # game state
 IDLE = 0
 PAUSE = 1
@@ -54,6 +56,7 @@ def load_asset(name):
     else:
         assets[name] = pg.image.load(os.path.join(res_dir, name)).convert_alpha()
         return assets[name]
+
 
 def load_music(name):
     if name in music:
