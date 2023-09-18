@@ -15,12 +15,15 @@ RESUME_EVENT = pg.USEREVENT + 4
 RESTART_EVENT = pg.USEREVENT + 5
 # boss event, trigger when boss appear
 BOSS_EVENT = pg.USEREVENT + 6
+# buff event, trigger when buff appear
 
 END_EVENT = pg.USEREVENT + 7
 
 START_EVENT = pg.USEREVENT + 8
 
 WIN_EVENT = pg.USEREVENT + 9
+
+BUFF_EVENT = pg.USEREVENT + 10
 
 # game state
 IDLE = 0
@@ -30,13 +33,18 @@ QUIT = 3
 END = 4
 START = 5
 # fall speed of enemies and buffs
-FALL_SPEED = 5
+FALL_SPEED = 3
 # spawn time of enemies
 SPAWN_TIME = 1000
+SUMMON_SPAWN_TIME = 2000
+BUFF_TIME = 3000
 # screen size
 WIDTH, HEIGHT = 480, 720
 # boss respawn time
 BOSS_TIME = 50000
+
+NAME_MAX_LENGTH = 6
+RANK_MAX_LENGTH = 5
 
 # bullet type
 BLT_AMMO = 0
@@ -63,7 +71,7 @@ def load_music(name):
         return music[name]
     else:
         music[name] = pg.mixer.Sound(os.path.join(res_dir, name))
-        music[name].set_volume(0.4)
+        music[name].set_volume(0.5)
         return music[name]
 
 

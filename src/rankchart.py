@@ -1,8 +1,8 @@
 # table in pygame
 import pygame as pg
 import os
-import ast
 import json
+import utils
 
 main_dir = os.path.abspath(__file__)
 res_dir = os.path.join(os.path.dirname(os.path.dirname(main_dir)), "res")
@@ -26,7 +26,7 @@ class Table:
         self.background = pg.Surface((self.width, self.height))
         self.background.fill((0, 0, 0))
         self.origin = (
-            (self.screen.get_rect().width - self.width) // 2, (self.screen.get_rect().height - self.height) // 2)
+            (self.screen.get_rect().width - self.width) // 2, 50)
         pg.draw.rect(self.screen, (255, 255, 255),
                      (self.origin[0], self.origin[1], self.width, self.height), 1)
         for i in range(len(self.rows)):
@@ -48,36 +48,24 @@ class Table:
                 y = (j + 1) * self.row_height
                 self.screen.blit(text, (self.origin[0] + x + self.line_padding, self.origin[1] + y + self.line_padding))
 
-    def updateFile(self):
-        with open(os.path.join(res_dir, 'scores.txt'), 'r') as f:
-            data = f.read()
-
-        playerdict = ast.literal_eval(data)
-        f.close()
-
-        # # sorted_score = sorted(list(playerdict.items()), key=lambda x: x[1])
-        # # write results into file
-        # with open(os.path.join(res_dir, 'scores.txt'), 'w') as f:
-        #
-        # f.close()
-
     def update(self, player_name, score):
         def update_inner():
             nonlocal player_name, score
             with open(os.path.join(res_dir, 'scores.txt'), 'r+') as f:
-                data = f.read()
                 self.rows = []
                 try:
-                    playerdict = ast.literal_eval(data)
+                    score_list = json.load(f)
                 except:
-                    playerdict = {}
-                playerdict[player_name] = score
-                sorted_score = sorted(list(playerdict.items()), key=lambda x: x[1])
+                    score_list = []
+                score_list.append((player_name, score))
+                sorted_score = sorted(score_list, key=lambda x: x[1], reverse=True)
                 for i, (name, score) in enumerate(sorted_score):
-                    self.rows.append([i + 1, name, score])
+                    if i >= utils.RANK_MAX_LENGTH:
+                        break
+                    self.rows.append([i + 1, name, utils.format_number(score)])
                 f.seek(0)
                 f.truncate()
-                json.dump(playerdict, f)
+                json.dump(score_list, f)
                 f.close()
 
         try:

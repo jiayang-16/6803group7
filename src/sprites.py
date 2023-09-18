@@ -1,6 +1,8 @@
 import math
 
 import pygame as pg
+from pygame import Mask
+
 import utils
 
 
@@ -45,7 +47,7 @@ class Bullet(pg.sprite.Sprite):
 
 class BuffType:
     def __init__(self, name="default", image="buff01.png", width=50, height=50, bullet_cnt=None,
-                 shoot_speed=None, bullet_size=None, bullet_range=None):
+                 shoot_speed=None, bullet_size=None, bullet_range=None, bullet_dmg=None):
         self.name = name
         self.image = image
         self.width = width
@@ -54,6 +56,7 @@ class BuffType:
         self.bullet_speed = shoot_speed
         self.bullet_size = bullet_size
         self.bullet_range = bullet_range
+        self.bullet_dmg = bullet_dmg
 
 
 class Buff(pg.sprite.Sprite):
@@ -90,7 +93,7 @@ class Buff(pg.sprite.Sprite):
 
 
 class EnemyType:
-    def __init__(self, name="default", health=10.0, image="enm01.png", width=100, height=100, boss=False):
+    def __init__(self, name="default", health=10.0, image="enm1.png", width=100, height=100, boss=False):
         self.name = name
         self.health = health
         self.image = image
@@ -100,7 +103,7 @@ class EnemyType:
 
 
 class Enemy(pg.sprite.Sprite):
-    def __init__(self, x, y, type=EnemyType(), speed=(0, utils.FALL_SPEED), bounce=False):
+    def __init__(self, x, y, type=EnemyType(), speed=(0, utils.FALL_SPEED), bounce=False, buff_type=None):
         pg.sprite.Sprite.__init__(self)
         if not type.image:
             self.image = pg.Surface((type.width, type.height))
@@ -116,8 +119,9 @@ class Enemy(pg.sprite.Sprite):
         self.health = type.health
         self.type = type
         self.bounce = bounce
-        self.font = pg.font.Font(None, 40)
+        self.font = pg.font.Font(None, 36)
         self.hp_change = True
+        self.buff_type = buff_type
 
     # reach the edge of screen
     # return 0/1/2/3 for left/right/top/bottom
@@ -133,14 +137,24 @@ class Enemy(pg.sprite.Sprite):
         return -1
 
     def update(self):
-        if self.hp_change:
-            # refresh image to show health
-            theta = 180 / math.pi * math.atan(self.speed[0] / self.speed[1])
+        def get_theta():
+            if self.speed[1] == 0:
+                if self.speed[0] > 0:
+                    theta = 90
+                else:
+                    theta = -90
+            else:
+                theta = 180 / math.pi * math.atan(self.speed[0] / self.speed[1])
             if self.speed[1] < 0:
                 theta += 180
-            self.image = pg.transform.rotate(self.imagesrc, theta)
+            return theta
+
+        if self.hp_change:
+            # refresh image to show health
+            self.image = pg.transform.rotate(self.imagesrc, get_theta())
             text = self.font.render(utils.format_number(self.health), True, (255, 0, 0))
-            self.image.blit(text, (0, 0))
+            # add text in center
+            self.image.blit(text, (10, 10))
             self.hp_change = False
         if not self.type.boss or (self.type.boss and self.rect.bottom < utils.HEIGHT // 3):
             self.rect.x += self.speed[0]
@@ -156,25 +170,21 @@ class Enemy(pg.sprite.Sprite):
                     self.speed[0] = -self.speed[0]
                 elif reach == 3:
                     self.speed[1] = -self.speed[1]
-                print(math.atan(self.speed[0] / self.speed[1]))
-                theta = 180 / math.pi * math.atan(self.speed[0] / self.speed[1])
-                if self.speed[1] < 0:
-                    theta += 180
-                self.image = pg.transform.rotate(self.imagesrc, theta)
-                text = self.font.render(utils.format_number(self.health), True, (255, 0, 0))
-                self.image.blit(text, (0, 0))
+                self.image = pg.transform.rotate(self.imagesrc, get_theta())
                 self.mask = pg.mask.from_surface(self.image)
+                text = self.font.render(utils.format_number(self.health), True, (255, 0, 0))
+                self.image.blit(text, (10, 10))
 
 
 class Player(pg.sprite.Sprite):
     def __init__(self, move_speed=5, image="ply01.png", shoot_speed=2, bullet_type=BulletType()):
         pg.sprite.Sprite.__init__(self)
         if not image:
-            self.image = pg.Surface((50, 50))
+            self.image = pg.Surface((40, 40))
             self.image.fill((0, 255, 0))
         else:
             self.image = utils.load_asset(image)
-            self.image = pg.transform.scale(self.image, (50, 50))
+            self.image = pg.transform.scale(self.image, (40, 40))
             self.mask = pg.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.centerx = utils.WIDTH / 2
@@ -190,6 +200,7 @@ class Player(pg.sprite.Sprite):
         if speed == 0:
             return
         self.bullet_speed += speed
+        self.bullet_type.speed -= speed
         pg.time.set_timer(utils.FIRE_EVENT, 1000 // self.bullet_speed)
 
     def update(self):
@@ -222,7 +233,7 @@ class Player(pg.sprite.Sprite):
         return new_bullets
 
     def add_buff(self, buff):
-        if buff.type.bullet_cnt is not None and self.bullet_cnt + buff.type.bullet_cnt > 0:
+        if buff.type.bullet_cnt is not None and self.bullet_cnt + buff.type.bullet_cnt <= 10:
             self.bullet_cnt += buff.type.bullet_cnt
         if buff.type.bullet_speed is not None and self.bullet_speed + buff.type.bullet_speed > 0:
             self.add_shoot_speed(buff.type.bullet_speed)
@@ -232,6 +243,8 @@ class Player(pg.sprite.Sprite):
             self.bullet_type.damage *= buff.type.bullet_size
         if buff.type.bullet_range is not None:
             self.bullet_type.range += buff.type.bullet_range
+        if buff.type.bullet_dmg is not None:
+            self.bullet_type.damage *= buff.type.bullet_dmg
 
 
 class Animation(pg.sprite.Sprite):
