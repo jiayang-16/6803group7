@@ -1,3 +1,4 @@
+import math
 import random
 
 import pygame as pg
@@ -15,6 +16,7 @@ class StartPage:
         self.wp2_button = sprites.Button(utils.WIDTH // 2 + 50, utils.HEIGHT // 2 + 150, 50, 50, image="ply02.png",
                                          event=lambda: self.select_weapon(utils.BLT_BLADE), once=False, border=True)
         self.select_weapon(utils.BLT_AMMO)
+        self.logo = pg.transform.scale(utils.load_asset("logo.png"), (420, 180))
         self.screen = screen
 
     def select_weapon(self, type):
@@ -22,7 +24,7 @@ class StartPage:
         if type == utils.BLT_BLADE:
             player = sprites.Player(image="ply02.png",
                                     shoot_speed=1,
-                                    bullet_type=sprites.BulletType(damage=1, speed=-2, kind=utils.BLT_BLADE, width=50,
+                                    bullet_type=sprites.BulletType(damage=1.5, speed=-2, kind=utils.BLT_BLADE, width=50,
                                                                    height=10,
                                                                    image="blt_b_01.png", range=100))
             self.wp1_button.selected = False
@@ -45,6 +47,7 @@ class StartPage:
         dim_surface = pg.Surface((utils.WIDTH, utils.HEIGHT), pg.SRCALPHA)
         dim_surface.fill((0, 0, 0, 128))
         self.screen.blit(dim_surface, (0, 0))
+        self.screen.blit(self.logo, ((utils.WIDTH - self.logo.get_rect().width) // 2, 100))
         if len(player_name) == 0:
             text = pg.font.Font(None, 36).render("Please input your name", True, (255, 255, 255))
         else:
@@ -87,21 +90,21 @@ class PauseMenu:
 
 class EndPage:
     def __init__(self, screen):
-        self.button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 100, 250, 50,
+        self.button = sprites.Button(utils.WIDTH // 2, utils.HEIGHT // 2 + 200, 250, 50,
                                      text="Back to main menu", event=utils.RESTART_EVENT)
         self.screen = screen
         self.rankchart = Table(screen)
 
-    def draw(self, text="Game Over"):
+    def draw(self, t="Game Over"):
         dim_surface = pg.Surface((utils.WIDTH, utils.HEIGHT), pg.SRCALPHA)
         dim_surface.fill((0, 0, 0, 128))
         self.screen.blit(dim_surface, (0, 0))
-        pause_text = pg.font.Font(None, 40).render(text, True, (255, 0, 0))
-        screen.blit(pause_text, ((utils.WIDTH - pause_text.get_rect().width) // 2, utils.HEIGHT // 2))
+        text = pg.font.Font(None, 40).render(t, True, (255, 0, 0))
+        screen.blit(text, ((utils.WIDTH - text.get_rect().width) // 2, utils.HEIGHT // 2 + 100))
         all_sprites.add(self.button)
         all_buttons.add(self.button)
         self.button.draw(screen)
-        self.rankchart.update(player_name,100)
+        self.rankchart.update(player_name, score)
         self.rankchart.draw()
 
     def clear(self):
@@ -109,7 +112,7 @@ class EndPage:
 
 
 def reset_game():
-    global game_state, player, boss, ticker
+    global game_state, player, boss, ticker, score
     all_sprites.empty()
     all_bullets.empty()
     all_enemies.empty()
@@ -118,19 +121,23 @@ def reset_game():
     all_buttons.empty()
     boss = None
     ticker = 0
+    score = 0
     game_state = utils.START
     start_page.select_weapon(utils.BLT_AMMO)
+    pg.time.set_timer(utils.SPAWN_EVENT, utils.SPAWN_TIME)
     start_page.draw()
     bg_music.play(-1)
 
 
-def generate_buff(bullet_kind):
+def generate_buff(weapon_kind, img="buff01.png"):
     b_type = None
     r = random.randint(0, 1)
-    if bullet_kind == utils.BLT_AMMO:
-        b_type = sprites.BuffType(bullet_cnt=random.randrange(0, 2), shoot_speed=random.randrange(0, 2))
-    elif bullet_kind == utils.BLT_BLADE:
-        b_type = sprites.BuffType(bullet_size=random.uniform(1, 1.1), bullet_range=random.randrange(10, 20))
+    if weapon_kind == utils.BLT_AMMO:
+        b_type = sprites.BuffType(bullet_cnt=random.randrange(0, 2), shoot_speed=random.randrange(0, 3),
+                                  bullet_dmg=random.uniform(1, 1.04))
+    elif weapon_kind == utils.BLT_BLADE:
+        b_type = sprites.BuffType(bullet_size=random.uniform(1.02, 1.05), bullet_range=random.randrange(0, 5))
+    b_type.image = img
     return b_type
 
 
@@ -140,6 +147,7 @@ pg.mixer.init()
 
 screen = pg.display.set_mode((utils.WIDTH, utils.HEIGHT), pg.SCALED)
 pg.display.set_caption("MH Rogue: Sky Battlefield")
+pg.display.set_icon(utils.load_asset("logo.png"))
 pg.mouse.set_visible(True)
 
 background = utils.load_asset("background.png")
@@ -160,9 +168,11 @@ all_players = pg.sprite.Group()
 all_buttons = pg.sprite.Group()
 boss = None
 ticker = 0
+score = 0
 
 player_name = ""
 pg.time.set_timer(utils.SPAWN_EVENT, utils.SPAWN_TIME)
+pg.time.set_timer(utils.BUFF_EVENT, utils.BUFF_TIME)
 start_page = StartPage(screen)
 start_page.draw()
 pause_menu = PauseMenu(screen)  # Create the pause menu
@@ -179,21 +189,29 @@ while game_state != utils.QUIT:
             game_state = utils.RUNNING
             all_players.add(player)
             all_sprites.add(player)
+        elif event.type == utils.BUFF_EVENT and game_state == utils.RUNNING:
+            buff = sprites.Buff(
+                random.randrange(sprites.BuffType().width // 2, utils.WIDTH - sprites.BuffType().width // 2), 0,
+                generate_buff(player.bullet_type.kind, img="buff02.png"))
+            all_sprites.add(buff)
+            all_buffs.add(buff)
         elif event.type == utils.FIRE_EVENT and game_state == utils.RUNNING:
             bullets = player.shoot()
             all_sprites.add(bullets)
             all_bullets.add(bullets)
         elif event.type == utils.SPAWN_EVENT and game_state == utils.RUNNING:
             if not boss:
+                hp = random.uniform(0, 1) * (math.e ** (ticker // 4900)) + 1
+                icon = f"enm{random.randrange(1, 6)}.png"
                 enemy = sprites.Enemy(
                     random.randrange(sprites.EnemyType().width // 2, utils.WIDTH - sprites.EnemyType().width // 2), 0,
-                    sprites.EnemyType(health=random.randrange(1, 10)))
+                    sprites.EnemyType(health=hp, image=icon), buff_type=generate_buff(player.bullet_type.kind))
             else:
-                enemy_type = sprites.EnemyType(image="boss_summon01.png", health=200, width=70, height=100)
-                random_x_speed = random.randrange(-3, 3)
+                enemy_type = sprites.EnemyType(image="boss_summon01.png", health=500, width=50, height=70)
+                random_x_speed = random.randint(-(utils.FALL_SPEED - 1), utils.FALL_SPEED - 1)
                 random_y_speed = utils.FALL_SPEED - abs(random_x_speed)
                 enemy = sprites.Enemy(
-                    random.randrange(sprites.EnemyType().width // 2, utils.WIDTH - enemy_type.width // 2), 0,
+                    boss.rect.centerx, boss.rect.centery,
                     enemy_type, speed=(random_x_speed, random_y_speed), bounce=True)
                 utils.load_music("music/fireball.mp3").play()
             all_sprites.add(enemy)
@@ -212,10 +230,12 @@ while game_state != utils.QUIT:
             reset_game()
         elif event.type == utils.END_EVENT:
             game_state = utils.END
+            utils.load_music("music/gameover.mp3").play()
             bg_music.stop()
             end_page.draw()
         elif event.type == utils.WIN_EVENT:
             game_state = utils.END
+            utils.load_music("music/success.mp3").play()
             bg_music.stop()
             end_page.draw("You Win!")
 
@@ -229,7 +249,8 @@ while game_state != utils.QUIT:
                 if game_state == utils.START:  # input player name
                     if event.key == pg.K_BACKSPACE:
                         player_name = player_name[:-1]
-                    elif (event.unicode.isalpha() or event.unicode.isdigit()) and len(player_name) < 12:
+                    elif (event.unicode.isalpha() or event.unicode.isdigit()) and len(
+                            player_name) < utils.NAME_MAX_LENGTH:
                         player_name += event.unicode
                     start_page.draw()
 
@@ -251,15 +272,14 @@ while game_state != utils.QUIT:
                                  sprites.EnemyType(image="boss01.png", health=20000, width=200, height=200, boss=True))
             all_enemies.add(boss)
             all_sprites.add(boss)
+            pg.time.set_timer(utils.SPAWN_EVENT, utils.SUMMON_SPAWN_TIME)
         ticker += duration
         # update position of all_sprites, make sure do calculations after this line
         all_sprites.update()
         # calculate player&enemies hits
-        player_hits = pg.sprite.groupcollide(all_enemies, all_players, True, False, collided=pg.sprite.collide_mask)
+        player_hits = pg.sprite.groupcollide(all_enemies, all_players, False, False, collided=pg.sprite.collide_mask)
         if len(player_hits) > 0:
             pg.event.post(pg.event.Event(utils.END_EVENT))
-            utils.load_music("music/gameover.mp3").play()
-            continue
         # calculate bullets&enemies hits
         bullets_hits = pg.sprite.groupcollide(all_enemies, all_bullets, False, False)
         for hit in bullets_hits:  # {"enemy1":["bullet1","bullet2"]}
@@ -267,33 +287,37 @@ while game_state != utils.QUIT:
                 if bullet.type.kind == utils.BLT_AMMO:
                     bullet.kill()
                 hit.health -= bullet.type.damage
+                score += bullet.type.damage
                 hit.hp_change = True
                 if hit.health <= 0:
                     if hit.type.boss:
                         pg.event.post(pg.event.Event(utils.WIN_EVENT))
-                        continue
-                    utils.load_music("music/shoot.mp3").play()
+                    msc = utils.load_music("music/shoot.mp3")
+                    msc.set_volume(0.1)
+                    msc.play()
                     hit.kill()
                     animation = sprites.Animation(hit.rect.centerx, hit.rect.centery,
                                                   ["explosion/1.png", "explosion/2.png", "explosion/3.png"],
-                                                  width=hit.rect.width, height=hit.rect.height)
+                                                  width=hit.rect.width, height=hit.rect.width)
                     all_sprites.add(animation)
-                    buff_type = generate_buff(bullet.type.kind)
-                    buff = sprites.Buff(hit.rect.centerx, hit.rect.centery, type=buff_type)
-                    all_buffs.add(buff)
-                    all_sprites.add(buff)
+                    buff_type = hit.buff_type
+                    if buff_type:
+                        buff = sprites.Buff(hit.rect.centerx, hit.rect.centery, type=buff_type)
+                        all_buffs.add(buff)
+                        all_sprites.add(buff)
                     break
         # calculate player&buffs hits
         buff_hits = pg.sprite.groupcollide(all_buffs, all_players, True, False)
         for buff in buff_hits:
             player.add_buff(buff)
-
         # refresh screen and draw all_sprites
         screen.blit(background, (0, 0))
         time_text = pg.font.Font(None, 36).render("Time: " + utils.format_number(ticker // 1000), True, (255, 255, 255))
         # table = Table(screen, ["Rank", "Name", "Score"], [(1, "ljy", 100), (2, "ljy", 100), (3, "ljy", 100)])
         # table.draw()
+        score_text = pg.font.Font(None, 36).render("Score: " + utils.format_number(score), True, (255, 255, 255))
         screen.blit(time_text, (10, 10))
+        screen.blit(score_text, (10, 50))
         all_sprites.draw(screen)
 
     pg.display.flip()
